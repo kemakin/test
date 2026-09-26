@@ -1,0 +1,10 @@
+{
+  "name": "forex-signal-ai",
+  "version": "1.0.0",
+  "description": "EUR/USD Forex-Analyse mit Chart und Buy/Sell-Signal aus mehreren technischen Analysen",
+  "private": true,
+  "scripts": {
+    "start": "npx http-server -p 8080 -c-1 .",
+    "test": "node --test test/*.test.js"
+  }
+}
