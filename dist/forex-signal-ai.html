@@ -1,0 +1,1104 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forex Signal AI</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0d1117;
+  --panel: #151b24;
+  --panel-2: #1b2330;
+  --border: #263041;
+  --text: #e6eaf2;
+  --muted: #8a93a6;
+  --buy: #22c38e;
+  --sell: #ef5b5b;
+  --neutral: #f5b841;
+  --accent: #4c8dff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.muted { color: var(--muted); font-weight: 400; }
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.brand { display: flex; gap: 12px; align-items: center; }
+.logo { font-size: 26px; color: var(--accent); }
+h1 { margin: 0; font-size: 18px; }
+.sub { margin: 0; font-size: 12px; color: var(--muted); }
+
+.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+select, .btn, .seg button {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.seg { display: flex; }
+.seg button { border-radius: 0; margin-left: -1px; }
+.seg button:first-child { border-radius: 8px 0 0 8px; }
+.seg button:last-child { border-radius: 0 8px 8px 0; }
+.seg button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn:hover, select:hover, .seg button:hover { border-color: var(--accent); }
+.btn:disabled { opacity: .6; cursor: wait; }
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  align-items: start;
+  gap: 16px;
+  padding: 16px 20px;
+}
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: 1fr; padding: 16px; }
+}
+
+.charts, .card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.charts { padding: 12px; min-width: 0; }
+.chart-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.price { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.change { font-variant-numeric: tabular-nums; }
+.change.up { color: var(--buy); }
+.change.down { color: var(--sell); }
+.legend { margin-left: auto; color: var(--muted); font-size: 12px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 3px; background: var(--c); margin-left: 8px; border-radius: 2px; }
+
+.chart.main { height: 440px; }
+.chart.sub { height: 120px; }
+.pane-label { font-size: 11px; color: var(--muted); margin: 8px 0 2px; text-transform: uppercase; letter-spacing: .04em; }
+
+.side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card { padding: 14px 16px; }
+.card-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; }
+
+.signal-label {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.signal.buy .signal-label { color: var(--buy); background: color-mix(in srgb, var(--buy) 14%, transparent); }
+.signal.sell .signal-label { color: var(--sell); background: color-mix(in srgb, var(--sell) 14%, transparent); }
+.signal.neutral .signal-label { color: var(--neutral); background: color-mix(in srgb, var(--neutral) 12%, transparent); }
+
+.gauge { margin: 14px 0 10px; }
+.gauge-track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--sell), var(--neutral) 50%, var(--buy));
+}
+.gauge-needle {
+  position: absolute;
+  top: -5px;
+  width: 4px;
+  height: 18px;
+  margin-left: -2px;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px var(--bg);
+  left: 50%;
+  transition: left .6s ease;
+}
+.gauge-scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+.stats div { background: var(--panel-2); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.stats span { font-size: 11px; }
+.stats b { font-variant-numeric: tabular-nums; }
+
+.levels { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-variant-numeric: tabular-nums; }
+.levels div { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border); padding: 3px 0; }
+.levels .sl b { color: var(--sell); }
+.levels .tp b { color: var(--buy); }
+.levels p { grid-column: 1 / -1; margin: 0; color: var(--muted); }
+
+.analyses { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.analyses li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+.analyses .name { font-weight: 600; }
+.analyses .verdict { font-size: 12px; font-weight: 700; }
+.analyses .verdict.buy { color: var(--buy); }
+.analyses .verdict.sell { color: var(--sell); }
+.analyses .verdict.neutral { color: var(--neutral); }
+.analyses .detail { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.bar { grid-column: 1 / -1; position: relative; height: 5px; background: var(--panel-2); border-radius: 3px; }
+.bar::after { content: ""; position: absolute; left: 50%; top: -2px; width: 1px; height: 9px; background: var(--border); }
+.bar span { position: absolute; top: 0; height: 100%; border-radius: 3px; }
+
+.recent { list-style: none; padding: 0; margin: 8px 0 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+.recent li { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.recent .b { color: var(--buy); font-weight: 700; }
+.recent .s { color: var(--sell); font-weight: 700; }
+
+.disclaimer { font-size: 11px; color: var(--muted); margin: 0; }
+</style>
+</head>
+<body>
+<header class="topbar">
+    <div class="brand">
+      <span class="logo">◆</span>
+      <div>
+        <h1>Forex Signal AI</h1>
+        <p class="sub" id="source">Lade Daten …</p>
+      </div>
+    </div>
+    <div class="controls">
+      <select id="pair" aria-label="Währungspaar">
+        <option value="EURUSD">EUR/USD</option>
+        <option value="USDEUR">USD/EUR</option>
+      </select>
+      <div class="seg" id="intervals" role="group" aria-label="Timeframe">
+        <button data-i="15m">15m</button>
+        <button data-i="1h" class="active">1H</button>
+        <button data-i="4h">4H</button>
+        <button data-i="1d">1D</button>
+      </div>
+      <button id="refresh" class="btn" title="Neu analysieren">↻ Analysieren</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="charts">
+      <div class="chart-head">
+        <span class="price" id="price">–</span>
+        <span class="change" id="change"></span>
+        <span class="legend">
+          <i style="--c:#f5b841"></i>EMA20
+          <i style="--c:#4c8dff"></i>EMA50
+          <i style="--c:#8a93a6"></i>Bollinger
+          <i style="--c:#22c38e"></i>Buy
+          <i style="--c:#ef5b5b"></i>Sell
+        </span>
+      </div>
+      <div id="chart-main" class="chart main"></div>
+      <div class="pane-label">RSI (14)</div>
+      <div id="chart-rsi" class="chart sub"></div>
+      <div class="pane-label">MACD (12/26/9)</div>
+      <div id="chart-macd" class="chart sub"></div>
+    </section>
+
+    <aside class="side">
+      <div class="card signal" id="signal-card">
+        <div class="card-title">KI-Signal <span id="updated" class="muted"></span></div>
+        <div class="signal-label" id="signal-label">…</div>
+        <div class="gauge">
+          <div class="gauge-track"><div class="gauge-needle" id="gauge-needle"></div></div>
+          <div class="gauge-scale"><span>Strong Sell</span><span>Neutral</span><span>Strong Buy</span></div>
+        </div>
+        <div class="stats">
+          <div><span class="muted">Score</span><b id="score">–</b></div>
+          <div><span class="muted">Konfidenz</span><b id="confidence">–</b></div>
+          <div><span class="muted">ATR (14)</span><b id="atr">–</b></div>
+        </div>
+        <div class="levels" id="levels"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Einzelanalysen</div>
+        <ul class="analyses" id="analyses"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Backtest der Signale</div>
+        <p id="backtest" class="muted">–</p>
+        <ul class="recent" id="recent"></ul>
+      </div>
+
+      <p class="disclaimer">
+        Keine Anlageberatung. Die Signale basieren ausschließlich auf technischer Analyse
+        historischer Kurse und können falsch sein. Forex-Handel mit Hebel birgt ein hohes Verlustrisiko.
+      </p>
+    </aside>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+/*
+ * Technische Indikatoren. Alle Funktionen liefern Arrays gleicher Länge wie die
+ * Eingabe; Werte, die (noch) nicht berechenbar sind, sind `null`.
+ */
+(function (root) {
+  'use strict';
+
+  function sma(values, period) {
+    const out = new Array(values.length).fill(null);
+    let sum = 0;
+    for (let i = 0; i < values.length; i++) {
+      sum += values[i];
+      if (i >= period) sum -= values[i - period];
+      if (i >= period - 1) out[i] = sum / period;
+    }
+    return out;
+  }
+
+  function ema(values, period) {
+    const out = new Array(values.length).fill(null);
+    const k = 2 / (period + 1);
+    let prev = null;
+    let seed = 0;
+    let count = 0;
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i];
+      if (v === null || v === undefined) continue;
+      if (prev === null) {
+        seed += v;
+        count++;
+        if (count === period) {
+          prev = seed / period;
+          out[i] = prev;
+        }
+      } else {
+        prev = v * k + prev * (1 - k);
+        out[i] = prev;
+      }
+    }
+    return out;
+  }
+
+  // Wilder-Glättung (RMA), genutzt von RSI, ATR und ADX.
+  function rma(values, period) {
+    const out = new Array(values.length).fill(null);
+    let prev = null;
+    let seed = 0;
+    let count = 0;
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i];
+      if (v === null || v === undefined) continue;
+      if (prev === null) {
+        seed += v;
+        count++;
+        if (count === period) {
+          prev = seed / period;
+          out[i] = prev;
+        }
+      } else {
+        prev = (prev * (period - 1) + v) / period;
+        out[i] = prev;
+      }
+    }
+    return out;
+  }
+
+  function rsi(closes, period = 14) {
+    const gains = [null];
+    const losses = [null];
+    for (let i = 1; i < closes.length; i++) {
+      const d = closes[i] - closes[i - 1];
+      gains.push(Math.max(d, 0));
+      losses.push(Math.max(-d, 0));
+    }
+    const ag = rma(gains, period);
+    const al = rma(losses, period);
+    return closes.map((_, i) => {
+      if (ag[i] === null || al[i] === null) return null;
+      if (al[i] === 0) return ag[i] === 0 ? 50 : 100;
+      return 100 - 100 / (1 + ag[i] / al[i]);
+    });
+  }
+
+  function macd(closes, fast = 12, slow = 26, signal = 9) {
+    const ef = ema(closes, fast);
+    const es = ema(closes, slow);
+    const line = closes.map((_, i) => (ef[i] !== null && es[i] !== null ? ef[i] - es[i] : null));
+    const sig = ema(line, signal);
+    const hist = line.map((v, i) => (v !== null && sig[i] !== null ? v - sig[i] : null));
+    return { line, signal: sig, hist };
+  }
+
+  function stdev(values, period) {
+    const out = new Array(values.length).fill(null);
+    const mean = sma(values, period);
+    for (let i = period - 1; i < values.length; i++) {
+      let s = 0;
+      for (let j = i - period + 1; j <= i; j++) s += (values[j] - mean[i]) ** 2;
+      out[i] = Math.sqrt(s / period);
+    }
+    return out;
+  }
+
+  function bollinger(closes, period = 20, mult = 2) {
+    const mid = sma(closes, period);
+    const sd = stdev(closes, period);
+    const upper = mid.map((m, i) => (m === null ? null : m + mult * sd[i]));
+    const lower = mid.map((m, i) => (m === null ? null : m - mult * sd[i]));
+    const percentB = closes.map((c, i) =>
+      upper[i] === null || upper[i] === lower[i] ? null : (c - lower[i]) / (upper[i] - lower[i])
+    );
+    const bandwidth = mid.map((m, i) => (m === null ? null : (upper[i] - lower[i]) / m));
+    return { mid, upper, lower, percentB, bandwidth };
+  }
+
+  function stochastic(highs, lows, closes, kPeriod = 14, dPeriod = 3, smooth = 3) {
+    const raw = new Array(closes.length).fill(null);
+    for (let i = kPeriod - 1; i < closes.length; i++) {
+      let hh = -Infinity;
+      let ll = Infinity;
+      for (let j = i - kPeriod + 1; j <= i; j++) {
+        hh = Math.max(hh, highs[j]);
+        ll = Math.min(ll, lows[j]);
+      }
+      raw[i] = hh === ll ? 50 : ((closes[i] - ll) / (hh - ll)) * 100;
+    }
+    const k = smaNullable(raw, smooth);
+    const d = smaNullable(k, dPeriod);
+    return { k, d };
+  }
+
+  function smaNullable(values, period) {
+    const out = new Array(values.length).fill(null);
+    for (let i = period - 1; i < values.length; i++) {
+      let s = 0;
+      let ok = true;
+      for (let j = i - period + 1; j <= i; j++) {
+        if (values[j] === null) { ok = false; break; }
+        s += values[j];
+      }
+      if (ok) out[i] = s / period;
+    }
+    return out;
+  }
+
+  function trueRange(highs, lows, closes) {
+    return closes.map((_, i) => {
+      if (i === 0) return highs[0] - lows[0];
+      return Math.max(
+        highs[i] - lows[i],
+        Math.abs(highs[i] - closes[i - 1]),
+        Math.abs(lows[i] - closes[i - 1])
+      );
+    });
+  }
+
+  function atr(highs, lows, closes, period = 14) {
+    return rma(trueRange(highs, lows, closes), period);
+  }
+
+  function adx(highs, lows, closes, period = 14) {
+    const n = closes.length;
+    const plusDM = [null];
+    const minusDM = [null];
+    for (let i = 1; i < n; i++) {
+      const up = highs[i] - highs[i - 1];
+      const down = lows[i - 1] - lows[i];
+      plusDM.push(up > down && up > 0 ? up : 0);
+      minusDM.push(down > up && down > 0 ? down : 0);
+    }
+    const tr = trueRange(highs, lows, closes);
+    tr[0] = null;
+    const str = rma(tr, period);
+    const sp = rma(plusDM, period);
+    const sm = rma(minusDM, period);
+    const plusDI = str.map((t, i) => (t ? (100 * sp[i]) / t : null));
+    const minusDI = str.map((t, i) => (t ? (100 * sm[i]) / t : null));
+    const dx = plusDI.map((p, i) => {
+      if (p === null || minusDI[i] === null) return null;
+      const s = p + minusDI[i];
+      return s === 0 ? 0 : (100 * Math.abs(p - minusDI[i])) / s;
+    });
+    return { adx: rma(dx, period), plusDI, minusDI };
+  }
+
+  function roc(closes, period = 10) {
+    return closes.map((c, i) => (i < period ? null : ((c - closes[i - period]) / closes[i - period]) * 100));
+  }
+
+  // Swing-Hochs/-Tiefs: Bar ist höher/tiefer als `span` Bars links und rechts.
+  function pivots(highs, lows, span = 3) {
+    const highsIdx = [];
+    const lowsIdx = [];
+    for (let i = span; i < highs.length - span; i++) {
+      let isHigh = true;
+      let isLow = true;
+      for (let j = 1; j <= span; j++) {
+        if (highs[i] <= highs[i - j] || highs[i] <= highs[i + j]) isHigh = false;
+        if (lows[i] >= lows[i - j] || lows[i] >= lows[i + j]) isLow = false;
+      }
+      if (isHigh) highsIdx.push(i);
+      if (isLow) lowsIdx.push(i);
+    }
+    return { highs: highsIdx, lows: lowsIdx };
+  }
+
+  const Indicators = { sma, ema, rma, rsi, macd, stdev, bollinger, stochastic, atr, adx, roc, pivots };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = Indicators;
+  else root.Indicators = Indicators;
+})(typeof self !== 'undefined' ? self : this);
+
+/*
+ * Signal-Engine: führt mehrere unabhängige Analysen durch und kombiniert sie
+ * gewichtet zu einer Empfehlung (Strong Buy … Strong Sell).
+ *
+ * Jede Analyse liefert einen Score in [-1, +1] (+1 = bullish, -1 = bearish)
+ * und eine kurze Begründung.
+ */
+(function (root) {
+  'use strict';
+
+  const I = typeof module !== 'undefined' && module.exports ? require('./indicators.js') : root.Indicators;
+
+  const WEIGHTS = {
+    trend: 2.0,
+    macd: 1.5,
+    adx: 1.5,
+    rsi: 1.0,
+    stoch: 1.0,
+    bollinger: 1.0,
+    sr: 1.0,
+    momentum: 0.75,
+    candle: 0.75,
+  };
+
+  const MIN_BARS = 60;
+
+  const clamp = (v, lo = -1, hi = 1) => Math.max(lo, Math.min(hi, v));
+  const fmt = (v, d = 5) => (v === null || v === undefined ? '–' : v.toFixed(d));
+
+  // Alle Indikatoren einmal für die gesamte Historie berechnen.
+  function prepare(candles) {
+    const o = candles.map((c) => c.open);
+    const h = candles.map((c) => c.high);
+    const l = candles.map((c) => c.low);
+    const c = candles.map((c) => c.close);
+    return {
+      candles, o, h, l, c,
+      ema20: I.ema(c, 20),
+      ema50: I.ema(c, 50),
+      ema200: I.ema(c, 200),
+      rsi: I.rsi(c, 14),
+      macd: I.macd(c),
+      bb: I.bollinger(c, 20, 2),
+      stoch: I.stochastic(h, l, c),
+      atr: I.atr(h, l, c, 14),
+      adx: I.adx(h, l, c, 14),
+      roc: I.roc(c, 10),
+      pivots: I.pivots(h, l, 3),
+    };
+  }
+
+  function trendAnalysis(x, i) {
+    const p = x.c[i], e20 = x.ema20[i], e50 = x.ema50[i], e200 = x.ema200[i];
+    if (e20 === null || e50 === null) return null;
+    let s = 0;
+    const why = [];
+    if (p > e20) { s += 0.3; why.push('Kurs > EMA20'); } else { s -= 0.3; why.push('Kurs < EMA20'); }
+    if (e20 > e50) { s += 0.4; why.push('EMA20 > EMA50'); } else { s -= 0.4; why.push('EMA20 < EMA50'); }
+    if (e200 !== null) {
+      if (p > e200) { s += 0.3; why.push('über EMA200'); } else { s -= 0.3; why.push('unter EMA200'); }
+    }
+    const prev20 = x.ema20[i - 1], prev50 = x.ema50[i - 1];
+    if (prev20 !== null && prev50 !== null) {
+      if (prev20 <= prev50 && e20 > e50) why.push('Golden Cross (EMA20/50)!');
+      if (prev20 >= prev50 && e20 < e50) why.push('Death Cross (EMA20/50)!');
+    }
+    return { score: clamp(s), detail: why.join(', ') };
+  }
+
+  function macdAnalysis(x, i) {
+    const { line, signal, hist } = x.macd;
+    if (hist[i] === null || hist[i - 1] === null) return null;
+    let s = hist[i] > 0 ? 0.5 : -0.5;
+    let why = hist[i] > 0 ? 'MACD über Signallinie' : 'MACD unter Signallinie';
+    if (hist[i - 1] <= 0 && hist[i] > 0) { s = 1; why = 'Bullisches MACD-Crossover'; }
+    else if (hist[i - 1] >= 0 && hist[i] < 0) { s = -1; why = 'Bärisches MACD-Crossover'; }
+    else if (Math.abs(hist[i]) > Math.abs(hist[i - 1])) { s *= 1.4; why += ', Momentum steigt'; }
+    else { s *= 0.6; why += ', Momentum lässt nach'; }
+    if (line[i] > 0 && signal[i] > 0) s += 0.1; else if (line[i] < 0 && signal[i] < 0) s -= 0.1;
+    return { score: clamp(s), detail: `${why} (Hist ${fmt(hist[i], 6)})` };
+  }
+
+  function rsiAnalysis(x, i) {
+    const r = x.rsi[i], rp = x.rsi[i - 1];
+    if (r === null || rp === null) return null;
+    let s, why;
+    if (r < 30) { s = 0.6 + (30 - r) / 50; why = 'überverkauft'; }
+    else if (r > 70) { s = -0.6 - (r - 70) / 50; why = 'überkauft'; }
+    else { s = (r - 50) / 40; why = r >= 50 ? 'bullische Zone' : 'bärische Zone'; }
+    if (rp < 30 && r >= 30) { s = 1; why = 'verlässt überverkauften Bereich'; }
+    if (rp > 70 && r <= 70) { s = -1; why = 'verlässt überkauften Bereich'; }
+    return { score: clamp(s), detail: `RSI ${r.toFixed(1)} – ${why}` };
+  }
+
+  function stochAnalysis(x, i) {
+    const k = x.stoch.k[i], d = x.stoch.d[i], kp = x.stoch.k[i - 1], dp = x.stoch.d[i - 1];
+    if (k === null || d === null || kp === null || dp === null) return null;
+    let s = k > d ? 0.3 : -0.3;
+    let why = k > d ? '%K über %D' : '%K unter %D';
+    if (k < 20) { s += 0.4; why += ', überverkauft'; }
+    if (k > 80) { s -= 0.4; why += ', überkauft'; }
+    if (kp <= dp && k > d && k < 30) { s = 1; why = 'Bullisches Crossover im überverkauften Bereich'; }
+    if (kp >= dp && k < d && k > 70) { s = -1; why = 'Bärisches Crossover im überkauften Bereich'; }
+    return { score: clamp(s), detail: `%K ${k.toFixed(1)} / %D ${d.toFixed(1)} – ${why}` };
+  }
+
+  function bollingerAnalysis(x, i) {
+    const pb = x.bb.percentB[i];
+    if (pb === null) return null;
+    // Mean Reversion: nahe unterem Band = Kaufchance, nahe oberem = Verkauf.
+    let s = clamp((0.5 - pb) * 1.6);
+    let why = pb < 0 ? 'Kurs unter unterem Band' : pb > 1 ? 'Kurs über oberem Band' : `%B ${(pb * 100).toFixed(0)} %`;
+    // Squeeze: sehr enge Bänder -> Ausbruch in Richtung des Kurses relativ zur Mitte.
+    const bw = x.bb.bandwidth;
+    let minBw = Infinity;
+    for (let j = Math.max(0, i - 100); j <= i; j++) if (bw[j] !== null) minBw = Math.min(minBw, bw[j]);
+    if (bw[i] !== null && bw[i] <= minBw * 1.1) {
+      s = x.c[i] > x.bb.mid[i] ? 0.5 : -0.5;
+      why += ', Squeeze → Ausbruch erwartet';
+    }
+    return { score: s, detail: why };
+  }
+
+  function adxAnalysis(x, i) {
+    const a = x.adx.adx[i], p = x.adx.plusDI[i], m = x.adx.minusDI[i];
+    if (a === null || p === null || m === null) return null;
+    const dir = p > m ? 1 : -1;
+    const strength = clamp((a - 15) / 25, 0, 1);
+    const trend = a < 20 ? 'kein klarer Trend' : a < 25 ? 'schwacher Trend' : a < 40 ? 'starker Trend' : 'sehr starker Trend';
+    return {
+      score: dir * strength,
+      detail: `ADX ${a.toFixed(1)} (${trend}), +DI ${p.toFixed(1)} ${p > m ? '>' : '<'} −DI ${m.toFixed(1)}`,
+    };
+  }
+
+  function srAnalysis(x, i) {
+    const a = x.atr[i];
+    if (a === null) return null;
+    const span = 3;
+    // Nur Pivots nutzen, die zum Zeitpunkt i bereits bestätigt waren (kein Lookahead).
+    const res = x.pivots.highs.filter((j) => j + span <= i && j >= i - 150).map((j) => x.h[j]);
+    const sup = x.pivots.lows.filter((j) => j + span <= i && j >= i - 150).map((j) => x.l[j]);
+    const p = x.c[i];
+    const above = res.filter((v) => v > p);
+    const below = sup.filter((v) => v < p);
+    const nr = above.length ? Math.min(...above) : null;
+    const ns = below.length ? Math.max(...below) : null;
+    let s = 0;
+    const why = [];
+    if (ns !== null) {
+      const d = (p - ns) / a;
+      if (d < 1) s += 0.6 * (1 - d);
+      why.push(`Support ${fmt(ns)} (${d.toFixed(1)} ATR)`);
+    }
+    if (nr !== null) {
+      const d = (nr - p) / a;
+      if (d < 1) s -= 0.6 * (1 - d);
+      why.push(`Widerstand ${fmt(nr)} (${d.toFixed(1)} ATR)`);
+    }
+    // Ausbruch über letzten Widerstand / unter letzten Support.
+    const lastRes = res.length ? res[res.length - 1] : null;
+    const lastSup = sup.length ? sup[sup.length - 1] : null;
+    if (lastRes !== null && x.c[i - 1] <= lastRes && p > lastRes) { s = 0.9; why.unshift('Ausbruch über Widerstand'); }
+    if (lastSup !== null && x.c[i - 1] >= lastSup && p < lastSup) { s = -0.9; why.unshift('Bruch unter Support'); }
+    return { score: clamp(s), detail: why.join(', ') || 'keine Level in der Nähe', support: ns, resistance: nr };
+  }
+
+  function momentumAnalysis(x, i) {
+    const r = x.roc[i], a = x.atr[i];
+    if (r === null || a === null) return null;
+    // ROC normiert auf die typische Schwankung (ATR in %).
+    const atrPct = (a / x.c[i]) * 100;
+    const s = clamp(r / (atrPct * 3));
+    return { score: s, detail: `ROC(10) ${r >= 0 ? '+' : ''}${r.toFixed(3)} %` };
+  }
+
+  function candleAnalysis(x, i) {
+    const o = x.o[i], h = x.h[i], l = x.l[i], c = x.c[i];
+    const po = x.o[i - 1], pc = x.c[i - 1];
+    const body = Math.abs(c - o);
+    const range = h - l || 1e-12;
+    const upper = h - Math.max(o, c);
+    const lower = Math.min(o, c) - l;
+    const downtrend = x.ema20[i] !== null && c < x.ema20[i];
+    const uptrend = x.ema20[i] !== null && c > x.ema20[i];
+    if (pc < po && c > o && c >= po && o <= pc && body > Math.abs(pc - po)) return { score: 0.9, detail: 'Bullish Engulfing' };
+    if (pc > po && c < o && c <= po && o >= pc && body > Math.abs(pc - po)) return { score: -0.9, detail: 'Bearish Engulfing' };
+    if (lower > 2 * body && upper < body && downtrend) return { score: 0.7, detail: 'Hammer im Abwärtstrend' };
+    if (upper > 2 * body && lower < body && uptrend) return { score: -0.7, detail: 'Shooting Star im Aufwärtstrend' };
+    if (body / range < 0.1) return { score: 0, detail: 'Doji – Unentschlossenheit' };
+    return { score: clamp(((c - o) / range) * 0.4), detail: c >= o ? 'bullische Kerze' : 'bärische Kerze' };
+  }
+
+  const ANALYSES = [
+    ['trend', 'Trend (EMA 20/50/200)', trendAnalysis],
+    ['macd', 'MACD (12/26/9)', macdAnalysis],
+    ['adx', 'ADX / DMI (14)', adxAnalysis],
+    ['rsi', 'RSI (14)', rsiAnalysis],
+    ['stoch', 'Stochastik (14/3/3)', stochAnalysis],
+    ['bollinger', 'Bollinger-Bänder (20/2)', bollingerAnalysis],
+    ['sr', 'Support / Widerstand', srAnalysis],
+    ['momentum', 'Momentum (ROC)', momentumAnalysis],
+    ['candle', 'Kerzenmuster', candleAnalysis],
+  ];
+
+  function labelFor(score) {
+    if (score >= 45) return 'STRONG BUY';
+    if (score >= 15) return 'BUY';
+    if (score <= -45) return 'STRONG SELL';
+    if (score <= -15) return 'SELL';
+    return 'NEUTRAL';
+  }
+
+  function evaluate(x, i) {
+    if (i < MIN_BARS) return null;
+    const results = [];
+    let wsum = 0, total = 0;
+    for (const [key, name, fn] of ANALYSES) {
+      const r = fn(x, i);
+      if (!r) continue;
+      const w = WEIGHTS[key];
+      results.push({ key, name, weight: w, ...r });
+      wsum += w;
+      total += w * r.score;
+    }
+    if (!wsum) return null;
+    const score = (total / wsum) * 100;
+    const dir = Math.sign(score);
+    // Konfidenz: Anteil des Gewichts, das in die gleiche Richtung zeigt.
+    const agree = results.reduce((acc, r) => acc + (Math.sign(r.score) === dir && Math.abs(r.score) > 0.1 ? r.weight : 0), 0);
+    const confidence = dir === 0 ? 0 : (agree / wsum) * 100;
+    const label = labelFor(score);
+
+    const price = x.c[i];
+    const a = x.atr[i];
+    let levels = null;
+    if (a !== null && label !== 'NEUTRAL') {
+      const s = dir > 0 ? 1 : -1;
+      levels = {
+        entry: price,
+        stopLoss: price - s * 1.5 * a,
+        takeProfit1: price + s * 1.5 * a,
+        takeProfit2: price + s * 3 * a,
+        riskReward: 2,
+      };
+    }
+    return { index: i, time: x.candles[i].time, price, score, label, confidence, atr: a, results, levels };
+  }
+
+  // Signalwechsel über die Historie – für Marker im Chart und die Trefferquote.
+  function history(x) {
+    const signals = [];
+    let lastDir = 0;
+    for (let i = MIN_BARS; i < x.c.length; i++) {
+      const e = evaluate(x, i);
+      if (!e) continue;
+      const dir = e.label.includes('BUY') ? 1 : e.label.includes('SELL') ? -1 : 0;
+      if (dir !== 0 && dir !== lastDir) signals.push({ index: i, time: e.time, dir, label: e.label, price: e.price });
+      if (dir !== 0) lastDir = dir;
+    }
+    return signals;
+  }
+
+  // Einfacher Backtest: Signal gilt als Treffer, wenn der Kurs nach `horizon`
+  // Bars in Signalrichtung liegt.
+  function hitRate(x, signals, horizon = 10) {
+    let hits = 0, n = 0;
+    for (const s of signals) {
+      const j = s.index + horizon;
+      if (j >= x.c.length) continue;
+      n++;
+      if ((x.c[j] - s.price) * s.dir > 0) hits++;
+    }
+    return { hits, total: n, rate: n ? (hits / n) * 100 : null, horizon };
+  }
+
+  function analyze(candles) {
+    const x = prepare(candles);
+    const current = evaluate(x, candles.length - 1);
+    const signals = history(x);
+    return { x, current, signals, backtest: hitRate(x, signals) };
+  }
+
+  const Signal = { analyze, prepare, evaluate, history, hitRate, labelFor, WEIGHTS, MIN_BARS };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = Signal;
+  else root.Signal = Signal;
+})(typeof self !== 'undefined' ? self : this);
+
+/*
+ * Kursdaten laden. Reihenfolge der Quellen:
+ *   1. Binance EURUSDT-Kerzen (echte OHLC-Daten, alle Timeframes, kein API-Key)
+ *   2. Frankfurter / EZB-Referenzkurse (nur Tageskurse)
+ *   3. Simulierte Demo-Daten (offline)
+ */
+(function (root) {
+  'use strict';
+
+  const INTERVALS = { '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 };
+
+  async function fetchJson(url, timeoutMs = 8000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  async function fromBinance(interval, limit) {
+    const url = `https://api.binance.com/api/v3/klines?symbol=EURUSDT&interval=${interval}&limit=${limit}`;
+    const rows = await fetchJson(url);
+    if (!Array.isArray(rows) || rows.length < 100) throw new Error('zu wenige Daten');
+    return rows.map((r) => ({
+      time: Math.floor(r[0] / 1000),
+      open: +r[1],
+      high: +r[2],
+      low: +r[3],
+      close: +r[4],
+    }));
+  }
+
+  async function fromFrankfurter() {
+    const start = new Date(Date.now() - 800 * 86400e3).toISOString().slice(0, 10);
+    const data = await fetchJson(`https://api.frankfurter.app/${start}..?from=EUR&to=USD`);
+    const days = Object.keys(data.rates).sort();
+    const out = [];
+    let prev = null;
+    for (const d of days) {
+      const close = data.rates[d].USD;
+      const open = prev ?? close;
+      out.push({
+        time: Math.floor(Date.parse(d + 'T00:00:00Z') / 1000),
+        open,
+        high: Math.max(open, close),
+        low: Math.min(open, close),
+        close,
+      });
+      prev = close;
+    }
+    if (out.length < 100) throw new Error('zu wenige Daten');
+    return out;
+  }
+
+  function demo(interval, limit) {
+    const step = INTERVALS[interval];
+    const now = Math.floor(Date.now() / 1000 / step) * step;
+    // Deterministischer Zufall, damit die Demo stabil bleibt.
+    let seed = 42;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
+    const vol = 0.0009 * Math.sqrt(step / 3600);
+    let price = 1.1;
+    let drift = 0;
+    const out = [];
+    for (let i = limit - 1; i >= 0; i--) {
+      if (i % 80 === 0) drift = (rnd() - 0.5) * vol * 0.6;
+      const open = price;
+      const close = open * (1 + drift + gauss() * vol);
+      const high = Math.max(open, close) * (1 + Math.abs(gauss()) * vol * 0.4);
+      const low = Math.min(open, close) * (1 - Math.abs(gauss()) * vol * 0.4);
+      out.push({ time: now - i * step, open, high, low, close });
+      price = close;
+    }
+    return out;
+  }
+
+  // USD/EUR ist der Kehrwert von EUR/USD; Hoch und Tief tauschen dabei die Rollen.
+  function invert(candles) {
+    return candles.map((c) => ({
+      time: c.time,
+      open: 1 / c.open,
+      high: 1 / c.low,
+      low: 1 / c.high,
+      close: 1 / c.close,
+    }));
+  }
+
+  async function load({ pair = 'EURUSD', interval = '1h', limit = 500 } = {}) {
+    let candles, source;
+    try {
+      candles = await fromBinance(interval, limit);
+      source = 'Binance EUR/USDT (live)';
+    } catch (e1) {
+      try {
+        candles = await fromFrankfurter();
+        source = 'EZB-Referenzkurse via Frankfurter (nur Tageskerzen)';
+        interval = '1d';
+      } catch (e2) {
+        candles = demo(interval, limit);
+        source = 'Demo-Daten (offline – keine Live-Quelle erreichbar)';
+      }
+    }
+    if (pair === 'USDEUR') candles = invert(candles);
+    return { candles, source, interval };
+  }
+
+  const Data = { load, invert, demo, INTERVALS };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = Data;
+  else root.ForexData = Data;
+})(typeof self !== 'undefined' ? self : this);
+
+(function () {
+  'use strict';
+
+  const LWC = window.LightweightCharts;
+  const $ = (id) => document.getElementById(id);
+  const REFRESH_MS = 60_000;
+
+  const state = { pair: 'EURUSD', interval: '1h', fitNext: true, timer: null };
+
+  const COLORS = {
+    buy: '#22c38e', sell: '#ef5b5b', neutral: '#f5b841',
+    ema20: '#f5b841', ema50: '#4c8dff', bb: 'rgba(138,147,166,.7)', text: '#8a93a6', grid: '#1e2632',
+  };
+
+  const baseOptions = {
+    layout: { background: { color: 'transparent' }, textColor: COLORS.text, fontSize: 11 },
+    grid: { vertLines: { color: COLORS.grid }, horzLines: { color: COLORS.grid } },
+    rightPriceScale: { borderColor: '#263041', minimumWidth: 70 },
+    timeScale: { borderColor: '#263041', timeVisible: true, secondsVisible: false },
+    crosshair: { mode: LWC ? LWC.CrosshairMode.Normal : 0 },
+    localization: { locale: 'en-US' },
+    autoSize: true,
+  };
+  const priceFormat = { type: 'price', precision: 5, minMove: 0.00001 };
+
+  let charts = null;
+
+  function createCharts() {
+    const main = LWC.createChart($('chart-main'), baseOptions);
+    const candles = main.addCandlestickSeries({
+      upColor: COLORS.buy, downColor: COLORS.sell, borderVisible: false,
+      wickUpColor: COLORS.buy, wickDownColor: COLORS.sell, priceFormat,
+    });
+    const line = (color, width = 2, style = 0) =>
+      main.addLineSeries({ color, lineWidth: width, lineStyle: style, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, priceFormat });
+    const ema20 = line(COLORS.ema20);
+    const ema50 = line(COLORS.ema50);
+    const bbUp = line(COLORS.bb, 1, 2);
+    const bbLow = line(COLORS.bb, 1, 2);
+
+    const subOpts = {
+      ...baseOptions,
+      layout: { ...baseOptions.layout, attributionLogo: false },
+      timeScale: { ...baseOptions.timeScale, visible: false },
+    };
+    const rsiChart = LWC.createChart($('chart-rsi'), subOpts);
+    const rsi = rsiChart.addLineSeries({ color: '#b48cff', lineWidth: 2, priceLineVisible: false });
+    rsi.createPriceLine({ price: 70, color: COLORS.sell, lineStyle: 2, lineWidth: 1, axisLabelVisible: false });
+    rsi.createPriceLine({ price: 30, color: COLORS.buy, lineStyle: 2, lineWidth: 1, axisLabelVisible: false });
+
+    const macdChart = LWC.createChart($('chart-macd'), subOpts);
+    const macdFmt = { type: 'price', precision: 6, minMove: 0.000001 };
+    const hist = macdChart.addHistogramSeries({ priceLineVisible: false, lastValueVisible: false, priceFormat: macdFmt });
+    const macdLine = macdChart.addLineSeries({ color: COLORS.ema50, lineWidth: 2, priceLineVisible: false, priceFormat: macdFmt });
+    const macdSig = macdChart.addLineSeries({ color: COLORS.ema20, lineWidth: 1, priceLineVisible: false, priceFormat: macdFmt });
+
+    // Zeitachsen der drei Charts synchron halten.
+    const all = [main, rsiChart, macdChart];
+    let syncing = false;
+    for (const src of all) {
+      src.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+        if (syncing || !range) return;
+        syncing = true;
+        for (const dst of all) if (dst !== src) dst.timeScale().setVisibleLogicalRange(range);
+        syncing = false;
+      });
+    }
+
+    return { main, candles, ema20, ema50, bbUp, bbLow, rsiChart, rsi, macdChart, hist, macdLine, macdSig, all };
+  }
+
+  const series = (candles, arr) =>
+    arr.map((v, i) => (v === null ? { time: candles[i].time } : { time: candles[i].time, value: v }));
+
+  function renderCharts(candles, result) {
+    const { x, signals } = result;
+    charts.candles.setData(candles);
+    charts.ema20.setData(series(candles, x.ema20));
+    charts.ema50.setData(series(candles, x.ema50));
+    charts.bbUp.setData(series(candles, x.bb.upper));
+    charts.bbLow.setData(series(candles, x.bb.lower));
+    charts.rsi.setData(series(candles, x.rsi));
+    charts.macdLine.setData(series(candles, x.macd.line));
+    charts.macdSig.setData(series(candles, x.macd.signal));
+    charts.hist.setData(
+      x.macd.hist.map((v, i) =>
+        v === null ? { time: candles[i].time } : { time: candles[i].time, value: v, color: v >= 0 ? 'rgba(34,195,142,.6)' : 'rgba(239,91,91,.6)' }
+      )
+    );
+    charts.candles.setMarkers(
+      signals.map((s) => ({
+        time: s.time,
+        position: s.dir > 0 ? 'belowBar' : 'aboveBar',
+        color: s.dir > 0 ? COLORS.buy : COLORS.sell,
+        shape: s.dir > 0 ? 'arrowUp' : 'arrowDown',
+        text: s.dir > 0 ? 'BUY' : 'SELL',
+      }))
+    );
+
+    // Stop-Loss / Take-Profit des aktuellen Signals als Linien einzeichnen.
+    for (const pl of charts.levelLines || []) charts.candles.removePriceLine(pl);
+    charts.levelLines = [];
+    const lv = result.current && result.current.levels;
+    if (lv) {
+      const add = (price, color, title) =>
+        charts.levelLines.push(charts.candles.createPriceLine({ price, color, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title }));
+      add(lv.stopLoss, COLORS.sell, 'SL');
+      add(lv.takeProfit1, COLORS.buy, 'TP1');
+      add(lv.takeProfit2, COLORS.buy, 'TP2');
+    }
+
+    if (state.fitNext) {
+      const n = candles.length;
+      charts.main.timeScale().setVisibleLogicalRange({ from: n - 150, to: n + 5 });
+      state.fitNext = false;
+    }
+  }
+
+  const tone = (label) => (label.includes('BUY') ? 'buy' : label.includes('SELL') ? 'sell' : 'neutral');
+  const verdict = (s) => (s > 0.15 ? ['Bullisch', 'buy'] : s < -0.15 ? ['Bärisch', 'sell'] : ['Neutral', 'neutral']);
+  const p5 = (v) => v.toFixed(5);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
+
+  function fmtTime(t) {
+    return new Date(t * 1000).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderSignal(candles, result) {
+    const cur = result.current;
+    const last = candles[candles.length - 1];
+    const prev = candles[candles.length - 2];
+    const chg = ((last.close - prev.close) / prev.close) * 100;
+    $('price').textContent = p5(last.close);
+    $('change').textContent = `${chg >= 0 ? '+' : ''}${chg.toFixed(3)} %`;
+    $('change').className = 'change ' + (chg >= 0 ? 'up' : 'down');
+
+    const card = $('signal-card');
+    if (!cur) {
+      card.className = 'card signal neutral';
+      $('signal-label').textContent = 'ZU WENIG DATEN';
+      return;
+    }
+    card.className = 'card signal ' + tone(cur.label);
+    $('signal-label').textContent = cur.label;
+    $('gauge-needle').style.left = `${50 + cur.score / 2}%`;
+    $('score').textContent = `${cur.score >= 0 ? '+' : ''}${cur.score.toFixed(1)}`;
+    $('confidence').textContent = `${cur.confidence.toFixed(0)} %`;
+    $('atr').textContent = cur.atr !== null ? `${(cur.atr * 1e4).toFixed(1)} Pips` : '–';
+    $('updated').textContent = new Date().toLocaleTimeString('de-DE');
+
+    const lv = cur.levels;
+    $('levels').innerHTML = lv
+      ? `<div><span>Entry</span><b>${p5(lv.entry)}</b></div>
+         <div class="sl"><span>Stop-Loss</span><b>${p5(lv.stopLoss)}</b></div>
+         <div class="tp"><span>Take-Profit 1</span><b>${p5(lv.takeProfit1)}</b></div>
+         <div class="tp"><span>Take-Profit 2</span><b>${p5(lv.takeProfit2)}</b></div>
+         <p>SL = 1,5 × ATR · TP2 mit Chance/Risiko 1 : ${lv.riskReward}</p>`
+      : '<p>Kein klares Setup – abwarten, bis sich die Analysen einig sind.</p>';
+
+    $('analyses').innerHTML = cur.results
+      .map((r) => {
+        const [text, cls] = verdict(r.score);
+        const w = Math.abs(r.score) * 50;
+        const left = r.score >= 0 ? 50 : 50 - w;
+        const color = r.score >= 0 ? 'var(--buy)' : 'var(--sell)';
+        return `<li>
+          <span class="name">${esc(r.name)} <span class="muted">×${r.weight}</span></span>
+          <span class="verdict ${cls}">${text}</span>
+          <div class="bar"><span style="left:${left}%;width:${w}%;background:${color}"></span></div>
+          <span class="detail">${esc(r.detail)}</span>
+        </li>`;
+      })
+      .join('');
+
+    const bt = result.backtest;
+    $('backtest').innerHTML = bt.rate === null
+      ? 'Noch keine auswertbaren Signale.'
+      : `<b>${bt.rate.toFixed(0)} %</b> Trefferquote bei ${bt.total} Signalwechseln
+         (Kurs ${bt.horizon} Kerzen später in Signalrichtung).`;
+    $('recent').innerHTML = result.signals
+      .slice(-6)
+      .reverse()
+      .map((s) => `<li><span class="${s.dir > 0 ? 'b' : 's'}">${s.label}</span><span>${p5(s.price)}</span><span class="muted">${fmtTime(s.time)}</span></li>`)
+      .join('');
+  }
+
+  async function run() {
+    const btn = $('refresh');
+    btn.disabled = true;
+    try {
+      const { candles, source, interval } = await window.ForexData.load({ pair: state.pair, interval: state.interval });
+      if (interval !== state.interval) {
+        state.interval = interval;
+        highlightInterval();
+      }
+      const result = window.Signal.analyze(candles);
+      const pairName = state.pair === 'EURUSD' ? 'EUR/USD' : 'USD/EUR';
+      $('source').textContent = `${pairName} · ${state.interval.toUpperCase()} · Quelle: ${source}`;
+      document.title = `${result.current ? result.current.label : ''} ${pairName} – Forex Signal AI`;
+      renderCharts(candles, result);
+      renderSignal(candles, result);
+    } catch (err) {
+      console.error(err);
+      $('source').textContent = 'Fehler beim Laden: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function highlightInterval() {
+    for (const b of $('intervals').querySelectorAll('button')) b.classList.toggle('active', b.dataset.i === state.interval);
+  }
+
+  function schedule() {
+    clearInterval(state.timer);
+    state.timer = setInterval(run, REFRESH_MS);
+  }
+
+  function init() {
+    if (!LWC) {
+      $('source').textContent = 'Chart-Bibliothek konnte nicht geladen werden (Internetverbindung prüfen).';
+      return;
+    }
+    charts = createCharts();
+    $('pair').addEventListener('change', (e) => { state.pair = e.target.value; state.fitNext = true; run(); });
+    $('intervals').addEventListener('click', (e) => {
+      const i = e.target.dataset && e.target.dataset.i;
+      if (!i) return;
+      state.interval = i;
+      state.fitNext = true;
+      highlightInterval();
+      run();
+    });
+    $('refresh').addEventListener('click', run);
+    run();
+    schedule();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
