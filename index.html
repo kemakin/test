@@ -2,89 +2,266 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Forex Signal AI – EUR/USD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Forex Signal AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="logo">◆</span>
-      <div>
-        <h1>Forex Signal AI</h1>
-        <p class="sub" id="source">Lade Daten …</p>
-      </div>
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M4 22 L11 14 L16 18 L27 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="27" cy="7" r="3" fill="currentColor"/>
+      </svg>
+      <span class="brand-name">Forex Signal <b>AI</b></span>
     </div>
-    <div class="controls">
-      <select id="pair" aria-label="Währungspaar">
-        <option value="EURUSD">EUR/USD</option>
-        <option value="USDEUR">USD/EUR</option>
-      </select>
-      <div class="seg" id="intervals" role="group" aria-label="Timeframe">
-        <button data-i="15m">15m</button>
-        <button data-i="1h" class="active">1H</button>
-        <button data-i="4h">4H</button>
-        <button data-i="1d">1D</button>
-      </div>
-      <button id="refresh" class="btn" title="Neu analysieren">↻ Analysieren</button>
+
+    <button class="pair-btn" id="pair-btn" title="Währungspaar wählen (Taste /)">
+      <span id="pair-name">EUR/USD</span>
+      <span class="caret">▾</span>
+    </button>
+
+    <div class="seg" id="intervals" role="group" aria-label="Timeframe">
+      <button data-i="5m">5m</button>
+      <button data-i="15m">15m</button>
+      <button data-i="1h">1H</button>
+      <button data-i="4h">4H</button>
+      <button data-i="1d">1D</button>
+      <button data-i="1w">1W</button>
+    </div>
+
+    <div class="top-right">
+      <span class="status-pill" id="status-pill" title="">…</span>
+      <span class="clock" id="clock"></span>
+      <button class="icon-btn" id="refresh" title="Jetzt aktualisieren">↻</button>
+      <button class="icon-btn" id="settings-btn" title="Einstellungen">⚙</button>
     </div>
   </header>
 
-  <main class="layout">
-    <section class="charts">
+  <section class="overview">
+    <article class="ov-card">
+      <h2>Handelssitzungen</h2>
+      <ul class="sessions" id="sessions"></ul>
+      <p class="ov-foot" id="market-state"></p>
+    </article>
+    <article class="ov-card">
+      <h2>Währungsstärke <span class="muted" id="strength-tf"></span></h2>
+      <ul class="strength" id="strength"></ul>
+    </article>
+    <article class="ov-card">
+      <h2>Top-Signale</h2>
+      <div class="top-signals">
+        <ul id="top-buy"></ul>
+        <ul id="top-sell"></ul>
+      </div>
+    </article>
+    <article class="ov-card">
+      <h2>Marktstimmung Watchlist</h2>
+      <div class="sentiment">
+        <div class="sent-bar" id="sent-bar"></div>
+        <div class="sent-legend" id="sent-legend"></div>
+        <p class="ov-foot" id="scan-state">Scanne …</p>
+      </div>
+    </article>
+  </section>
+
+  <main class="workspace">
+    <aside class="panel watchlist">
+      <div class="wl-head">
+        <h2>Watchlist</h2>
+        <button class="small-btn" id="wl-add" title="Paar hinzufügen">+ Paar</button>
+      </div>
+      <div class="wl-tabs" id="wl-tabs" role="tablist">
+        <button data-f="all" class="active">Alle</button>
+        <button data-f="fav">★</button>
+        <button data-f="major">Majors</button>
+        <button data-f="minor">Minors</button>
+        <button data-f="exotic">Exoten</button>
+      </div>
+      <div class="wl-tools">
+        <input id="wl-search" type="search" placeholder="Suchen …" aria-label="Watchlist durchsuchen">
+        <select id="wl-sort" aria-label="Sortierung">
+          <option value="default">Eigene Reihenfolge</option>
+          <option value="score-desc">Stärkste Buy zuerst</option>
+          <option value="score-asc">Stärkste Sell zuerst</option>
+          <option value="abs">Stärkstes Signal</option>
+          <option value="chg-desc">Größter Anstieg</option>
+          <option value="chg-asc">Größter Rückgang</option>
+          <option value="name">Name</option>
+        </select>
+      </div>
+      <div class="wl-cols"><span>Paar</span><span>Kurs · 24h</span><span>Signal</span></div>
+      <ul class="wl-list" id="wl-list"></ul>
+    </aside>
+
+    <section class="panel chartpanel">
       <div class="chart-head">
-        <span class="price" id="price">–</span>
-        <span class="change" id="change"></span>
-        <span class="legend">
-          <i style="--c:#f5b841"></i>EMA20
-          <i style="--c:#4c8dff"></i>EMA50
-          <i style="--c:#8a93a6"></i>Bollinger
-          <i style="--c:#22c38e"></i>Buy
-          <i style="--c:#ef5b5b"></i>Sell
-        </span>
+        <div class="ch-title">
+          <h1 id="ch-pair">EUR/USD</h1>
+          <span class="ch-name" id="ch-name"></span>
+        </div>
+        <div class="ch-price">
+          <span class="price" id="price">–</span>
+          <span class="change" id="change"></span>
+        </div>
+        <div class="ohlc" id="ohlc"></div>
+      </div>
+      <p class="notice" id="notice" hidden></p>
+      <div class="toolbar">
+        <div class="toggles" id="overlays">
+          <button data-o="ema20" style="--c:var(--ema20)">EMA 20</button>
+          <button data-o="ema50" style="--c:var(--ema50)">EMA 50</button>
+          <button data-o="ema200" style="--c:var(--ema200)">EMA 200</button>
+          <button data-o="bb" style="--c:var(--muted)">Bollinger</button>
+          <button data-o="sr" style="--c:var(--warn)">S/R</button>
+          <button data-o="markers" style="--c:var(--buy)">Signale</button>
+          <button data-o="levels" style="--c:var(--sell)">SL/TP</button>
+        </div>
+        <div class="seg small" id="chart-type">
+          <button data-t="candles" class="active">Kerzen</button>
+          <button data-t="line">Linie</button>
+        </div>
       </div>
       <div id="chart-main" class="chart main"></div>
-      <div class="pane-label">RSI (14)</div>
-      <div id="chart-rsi" class="chart sub"></div>
-      <div class="pane-label">MACD (12/26/9)</div>
-      <div id="chart-macd" class="chart sub"></div>
+      <div class="osc-tabs" id="osc-tabs">
+        <button data-k="rsi" class="active">RSI 14</button>
+        <button data-k="macd">MACD</button>
+        <button data-k="stoch">Stochastik</button>
+        <button data-k="adx">ADX</button>
+        <span class="osc-val" id="osc-val"></span>
+      </div>
+      <div id="chart-osc" class="chart osc"></div>
     </section>
 
-    <aside class="side">
-      <div class="card signal" id="signal-card">
-        <div class="card-title">KI-Signal <span id="updated" class="muted"></span></div>
+    <aside class="insights">
+      <article class="panel signal-card" id="signal-card">
+        <div class="sc-head">
+          <h2>KI-Signal</h2>
+          <span class="muted" id="sc-meta"></span>
+        </div>
         <div class="signal-label" id="signal-label">…</div>
         <div class="gauge">
           <div class="gauge-track"><div class="gauge-needle" id="gauge-needle"></div></div>
-          <div class="gauge-scale"><span>Strong Sell</span><span>Neutral</span><span>Strong Buy</span></div>
+          <div class="gauge-scale"><span>−100</span><span>Strong Sell</span><span>Neutral</span><span>Strong Buy</span><span>+100</span></div>
         </div>
-        <div class="stats">
-          <div><span class="muted">Score</span><b id="score">–</b></div>
-          <div><span class="muted">Konfidenz</span><b id="confidence">–</b></div>
-          <div><span class="muted">ATR (14)</span><b id="atr">–</b></div>
+        <div class="kpis">
+          <div><span>Score</span><b id="score">–</b></div>
+          <div><span>Konfidenz</span><b id="confidence">–</b></div>
+          <div><span>ATR 14</span><b id="atr">–</b></div>
+          <div><span>MTF</span><b id="mtf-consensus">–</b></div>
         </div>
         <div class="levels" id="levels"></div>
-      </div>
+      </article>
 
-      <div class="card">
-        <div class="card-title">Einzelanalysen</div>
+      <article class="panel">
+        <h2>Multi-Timeframe</h2>
+        <table class="mtf" id="mtf"></table>
+      </article>
+
+      <article class="panel">
+        <h2>Einzelanalysen</h2>
         <ul class="analyses" id="analyses"></ul>
-      </div>
+      </article>
 
-      <div class="card">
-        <div class="card-title">Backtest der Signale</div>
-        <p id="backtest" class="muted">–</p>
+      <article class="panel">
+        <h2>Positionsrechner</h2>
+        <form class="calc" id="calc" autocomplete="off">
+          <label>Kontowährung
+            <select id="acc-ccy"></select>
+          </label>
+          <label>Kontostand
+            <input id="acc-balance" type="number" min="0" step="100" value="10000">
+          </label>
+          <label>Risiko pro Trade (%)
+            <input id="acc-risk" type="number" min="0.1" max="100" step="0.1" value="1">
+          </label>
+          <label>Stop-Loss (Pips)
+            <input id="acc-sl" type="number" min="0.1" step="0.1">
+          </label>
+        </form>
+        <dl class="calc-out" id="calc-out"></dl>
+      </article>
+
+      <article class="panel">
+        <h2>Backtest &amp; letzte Signale</h2>
+        <p id="backtest" class="bt">–</p>
         <ul class="recent" id="recent"></ul>
-      </div>
+      </article>
+
+      <article class="panel">
+        <div class="sc-head">
+          <h2>Alarme</h2>
+          <button class="small-btn" id="notify-btn">Benachrichtigungen</button>
+        </div>
+        <ul class="alerts" id="alerts"><li class="muted">Noch keine Signalwechsel in dieser Sitzung.</li></ul>
+      </article>
 
       <p class="disclaimer">
-        Keine Anlageberatung. Die Signale basieren ausschließlich auf technischer Analyse
-        historischer Kurse und können falsch sein. Forex-Handel mit Hebel birgt ein hohes Verlustrisiko.
+        Keine Anlageberatung. Die Signale beruhen nur auf technischer Analyse vergangener Kurse und können
+        falsch sein. Forex-Handel mit Hebel kann zum Totalverlust führen.
       </p>
     </aside>
   </main>
 
+  <dialog class="modal" id="palette">
+    <div class="pal-head">
+      <input id="pal-search" type="search" placeholder="Paar suchen, z. B. GBPJPY oder Lira …" aria-label="Paar suchen">
+      <button class="icon-btn" data-close title="Schließen">✕</button>
+    </div>
+    <div class="pal-builder">
+      <span>Eigenes Paar:</span>
+      <select id="pal-base" aria-label="Basiswährung"></select>
+      <span>/</span>
+      <select id="pal-quote" aria-label="Kurswährung"></select>
+      <button class="small-btn" id="pal-open">Öffnen</button>
+      <button class="small-btn" id="pal-add">+ Watchlist</button>
+    </div>
+    <div class="pal-list" id="pal-list"></div>
+  </dialog>
+
+  <dialog class="modal settings" id="settings">
+    <form method="dialog" id="settings-form">
+      <div class="pal-head">
+        <h2>Einstellungen</h2>
+        <button class="icon-btn" value="cancel" title="Schließen">✕</button>
+      </div>
+      <label>Datenquelle
+        <select id="set-provider">
+          <option value="auto">Automatisch (beste verfügbare)</option>
+          <option value="twelvedata">Twelve Data (echte Forex-Kurse)</option>
+          <option value="binance">Binance (USDT-Märkte)</option>
+          <option value="ecb">EZB-Referenzkurse (täglich)</option>
+          <option value="demo">Demo-Daten</option>
+        </select>
+      </label>
+      <label>Twelve-Data-API-Key
+        <input id="set-tdkey" type="password" placeholder="kostenlos auf twelvedata.com">
+        <small>Echte Forex-Kurse für alle Paare und Timeframes. Der kostenlose Plan erlaubt 8 Anfragen pro Minute
+          und 800 pro Tag, daher wird die Watchlist dann seltener aktualisiert. Der Key bleibt nur in diesem Browser.</small>
+      </label>
+      <label>Automatisch aktualisieren
+        <select id="set-refresh">
+          <option value="30">alle 30 Sekunden</option>
+          <option value="60">jede Minute</option>
+          <option value="120">alle 2 Minuten</option>
+          <option value="300">alle 5 Minuten</option>
+          <option value="0">aus</option>
+        </select>
+      </label>
+      <div class="set-actions">
+        <button type="button" class="small-btn" id="set-reset">Watchlist zurücksetzen</button>
+        <button class="primary-btn" value="save" id="set-save">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="js/currencies.js"></script>
   <script src="js/indicators.js"></script>
   <script src="js/signal.js"></script>
   <script src="js/data.js"></script>

@@ -35,7 +35,7 @@ function trend(dir, n = 300) {
 }
 
 test('Aufwärtstrend ergibt BUY-Signal', () => {
-  const r = Signal.analyze(trend(1));
+  const r = Signal.analyze(trend(1), 5);
   assert.ok(r.current.score > 15, `score ${r.current.score}`);
   assert.match(r.current.label, /BUY/);
   assert.ok(r.current.levels.stopLoss < r.current.price);
@@ -50,7 +50,7 @@ test('Abwärtstrend ergibt SELL-Signal', () => {
 });
 
 test('USD/EUR ist gespiegelt zu EUR/USD', () => {
-  const candles = Data.demo('1h', 400);
+  const candles = Data.fromDemo('EURUSD', '1h', 400);
   const a = Signal.analyze(candles).current;
   const b = Signal.analyze(Data.invert(candles)).current;
   assert.strictEqual(Math.sign(a.results.find((r) => r.key === 'trend').score), -Math.sign(b.results.find((r) => r.key === 'trend').score));
@@ -58,8 +58,17 @@ test('USD/EUR ist gespiegelt zu EUR/USD', () => {
 });
 
 test('alle Analysen liefern Scores in [-1, 1]', () => {
-  const x = Signal.prepare(Data.demo('1h', 500));
+  const x = Signal.prepare(Data.fromDemo('EURUSD', '1h', 500));
   for (let i = Signal.MIN_BARS; i < 500; i++) {
     for (const r of Signal.evaluate(x, i).results) assert.ok(r.score >= -1 && r.score <= 1, `${r.key} ${r.score}`);
   }
+});
+
+test('quick() liefert dasselbe aktuelle Signal wie analyze()', () => {
+  const c = Data.fromDemo('USDJPY', '1h', 300);
+  const a = Signal.analyze(c, 3).current;
+  const b = Signal.quick(c, 3);
+  assert.strictEqual(a.label, b.label);
+  assert.strictEqual(a.score, b.score);
+  assert.match(b.results.find((r) => r.key === 'sr').detail, /\d+\.\d{3}\b/);
 });

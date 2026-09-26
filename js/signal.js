@@ -28,13 +28,13 @@
   const fmt = (v, d = 5) => (v === null || v === undefined ? '–' : v.toFixed(d));
 
   // Alle Indikatoren einmal für die gesamte Historie berechnen.
-  function prepare(candles) {
+  function prepare(candles, digits = 5) {
     const o = candles.map((c) => c.open);
     const h = candles.map((c) => c.high);
     const l = candles.map((c) => c.low);
     const c = candles.map((c) => c.close);
     return {
-      candles, o, h, l, c,
+      candles, o, h, l, c, digits,
       ema20: I.ema(c, 20),
       ema50: I.ema(c, 50),
       ema200: I.ema(c, 200),
@@ -77,7 +77,7 @@
     else if (Math.abs(hist[i]) > Math.abs(hist[i - 1])) { s *= 1.4; why += ', Momentum steigt'; }
     else { s *= 0.6; why += ', Momentum lässt nach'; }
     if (line[i] > 0 && signal[i] > 0) s += 0.1; else if (line[i] < 0 && signal[i] < 0) s -= 0.1;
-    return { score: clamp(s), detail: `${why} (Hist ${fmt(hist[i], 6)})` };
+    return { score: clamp(s), detail: `${why} (Hist ${fmt(hist[i], x.digits + 1)})` };
   }
 
   function rsiAnalysis(x, i) {
@@ -150,12 +150,12 @@
     if (ns !== null) {
       const d = (p - ns) / a;
       if (d < 1) s += 0.6 * (1 - d);
-      why.push(`Support ${fmt(ns)} (${d.toFixed(1)} ATR)`);
+      why.push(`Support ${fmt(ns, x.digits)} (${d.toFixed(1)} ATR)`);
     }
     if (nr !== null) {
       const d = (nr - p) / a;
       if (d < 1) s -= 0.6 * (1 - d);
-      why.push(`Widerstand ${fmt(nr)} (${d.toFixed(1)} ATR)`);
+      why.push(`Widerstand ${fmt(nr, x.digits)} (${d.toFixed(1)} ATR)`);
     }
     // Ausbruch über letzten Widerstand / unter letzten Support.
     const lastRes = res.length ? res[res.length - 1] : null;
@@ -274,14 +274,19 @@
     return { hits, total: n, rate: n ? (hits / n) * 100 : null, horizon };
   }
 
-  function analyze(candles) {
-    const x = prepare(candles);
+  function analyze(candles, digits = 5) {
+    const x = prepare(candles, digits);
     const current = evaluate(x, candles.length - 1);
     const signals = history(x);
     return { x, current, signals, backtest: hitRate(x, signals) };
   }
 
-  const Signal = { analyze, prepare, evaluate, history, hitRate, labelFor, WEIGHTS, MIN_BARS };
+  // Nur das aktuelle Signal (ohne Historie) – schnell genug für Watchlist-Scans.
+  function quick(candles, digits = 5) {
+    return evaluate(prepare(candles, digits), candles.length - 1);
+  }
+
+  const Signal = { analyze, quick, prepare, evaluate, history, hitRate, labelFor, WEIGHTS, MIN_BARS };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = Signal;
   else root.Signal = Signal;
